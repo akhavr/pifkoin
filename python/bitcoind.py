@@ -192,20 +192,24 @@ class Bitcoind(object):
         self._rpc_id += 1
 
         logger.debug('Starting "%s" JSON-RPC request', method)
+        body = json.dumps({
+            'version': '1.1',
+            'method': method,
+            'params': args,
+            'id': self._rpc_id,
+        })
+        headers = {
+            'Host': '%s:%d' % (self._rpc_host, self._rpc_port),
+            'Authorization': ''.join(('Basic ', self._rpc_auth)),
+            'Content-Type': 'application/json',
+        }
+        logger.debug('Headers: %s', repr(headers))
+        logger.debug('Body: %s', repr(body))
         self._rpc_conn.request(
             method='POST',
             url='/',
-            body=json.dumps({
-                'version': '1.1',
-                'method': method,
-                'params': args,
-                'id': self._rpc_id,
-            }),
-            headers={
-                'Host': '%s:%d' % (self._rpc_host, self._rpc_port),
-                'Authorization': ''.join(('Basic ', self._rpc_auth)),
-                'Content-Type': 'application/json',
-            }
+            body=body,
+            headers=headers
         )
 
         start = time.time()
