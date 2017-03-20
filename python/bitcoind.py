@@ -173,6 +173,7 @@ class Bitcoind(object):
         else:
             logger.debug('Making HTTP connection to %s:%d', self._rpc_host, self._rpc_port)
             self._rpc_conn = httplib.HTTPConnection(self._rpc_host, self._rpc_port, timeout=timeout)
+        self.n_attempts = 10 # 10 attempts to reconnect
 
         self._rpc_id = 0
 
@@ -203,17 +204,26 @@ class Bitcoind(object):
             'Authorization': ''.join(('Basic ', self._rpc_auth)),
             'Content-Type': 'application/json',
         }
-        logger.debug('Headers: %s', repr(headers))
-        logger.debug('Body: %s', repr(body))
-        self._rpc_conn.request(
-            method='POST',
-            url='/',
-            body=body,
-            headers=headers
-        )
 
         start = time.time()
-        response = self._rpc_conn.getresponse()
+        response = None
+        #self._rpc_conn.set_debuglevel(100)  # uncomment this to see the wire
+        for _ in xrange(self.n_attempts):
+            try:
+                self._rpc_conn.request(
+                    method='POST',
+                    url='/',
+                    body=body,
+                    headers=headers
+                )
+                response = self._rpc_conn.getresponse()
+            except Exception, e:
+                # connection broke, reestablish
+                self._rpc_conn.close()
+                self._rpc_conn.connect()
+                continue
+            else:
+                break
         if not response:
             raise BitcoindException('No response from bitcoind')
         if response.status != 200:
