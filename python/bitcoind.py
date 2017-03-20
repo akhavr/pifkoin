@@ -142,7 +142,7 @@ class Bitcoind(object):
         config.update(options)
         return config
 
-    def __init__(self, config_filename=DEFAULT_CONFIG_FILENAME, **config_options):
+    def __init__(self, config_filename=DEFAULT_CONFIG_FILENAME, n_attempts=3, **config_options):
         """
         Constructor.  Parses RPC communication details from ``bitcoin.conf``
         and opens a connection to the server.
@@ -173,7 +173,7 @@ class Bitcoind(object):
         else:
             logger.debug('Making HTTP connection to %s:%d', self._rpc_host, self._rpc_port)
             self._rpc_conn = httplib.HTTPConnection(self._rpc_host, self._rpc_port, timeout=timeout)
-        self.n_attempts = 10 # 10 attempts to reconnect
+        self.n_attempts = n_attempts  # number of attempts to reconnect
 
         self._rpc_id = 0
 
